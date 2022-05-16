@@ -1,6 +1,6 @@
 ## Red Hat OpenShift Service on AWS (ROSA) User Guide
 
-The open source version of the Red Hat OpenShift Service on AWS (ROSA) user guide. You can submit feedback & change requests by submitting issues in this repo, or by making proposed changes & submitting a pull request. You can even contribute suggested edits directly from each webpage by choosing the Edit button, making the suggested edits, and then choosing the Create pull request button.
+The open source version of the Red Hat OpenShift Service on AWS (ROSA) user guide. You can submit feedback & change requests by submitting issues in this repo, or by making proposed changes & submitting a pull request. You can even contribute suggested edits directly from each webpage by choosing the **Edit** button, making the suggested edits, and then choosing the **Create pull request** button.
 
 ## Security
 
