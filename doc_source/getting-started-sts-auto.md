@@ -4,18 +4,29 @@ The following sections describe how to get started with ROSA using AWS Security 
 
 The ROSA CLI uses `auto` mode or `manual` mode to create the IAM resources required to provision a ROSA cluster\. `auto` mode immediately creates the required IAM roles and policies and an OpenID Connect \(OIDC\) provider\. `manual` mode outputs the AWS CLI commands that are needed to create the IAM resources\. By using `manual` mode, you can review the generated AWS CLI commands before running them manually\. With `manual` mode, you can also pass the commands to another administrator or group in your organization so they can create the resources\.
 
-The procedures in this document use `auto` mode to create the required IAM resources\. For steps to deploy a ROSA cluster using `manual` mode, see [Create a custom ROSA cluster with AWS STS using `manual` mode](getting-started-sts-manual.md#getting-started-sts-manual-step-3)\.
+The procedures in this document use `auto` mode to create the required IAM resources\. For steps to deploy a ROSA cluster using `manual` mode, see [Create a custom ROSA cluster with AWS STS using `manual` mode](getting-started-sts-manual.md#getting-started-sts-manual-step-2)\.
 
-For more information about the `auto` and `manual` deployment modes, see [Understanding the auto and manual deployment modes](https://docs.openshift.com/rosa/rosa_install_access_delete_clusters/rosa-sts-creating-a-cluster-with-customizations.html#rosa-understanding-deployment-modes_rosa-sts-creating-a-cluster-with-customizations)\.
+**Topics**
++ [Prerequisites](#getting-started-sts-auto-prereqs)
++ [Step 1: Verify ROSA prerequisites](#getting-started-sts-auto-step-1)
++ [Step 2: Create a ROSA cluster with AWS STS using the default `auto` mode](#getting-started-sts-auto-step-2)
++ [Step 3: Create a cluster administrator for quick cluster access](#getting-started-sts-auto-step-3)
++ [Step 4: Configure an identify provider and grant cluster access](#getting-started-sts-auto-step-4)
++ [Step 5: Grant user access to a cluster](#getting-started-sts-auto-step-5)
++ [Step 6: Grant administrator permissions to a user](#getting-started-sts-auto-step-6)
++ [Step 7: Access a cluster through the web console](#getting-started-sts-auto-step-7)
++ [Step 8: Deploy an application from the Developer Catalog](#getting-started-sts-auto-step-8)
++ [Step 9: Revoke administrator permissions and user access](#getting-started-sts-auto-step-9)
++ [Step 10: Delete a ROSA cluster and AWS STS resources](#getting-started-sts-auto-step-10)
 
 ## Prerequisites<a name="getting-started-sts-auto-prereqs"></a>
 
 Before getting started, make sure you completed these actions:
 + Install and configure the latest AWS CLI\. For more information, see [Installing or updating the latest version of the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)\.
 + Install and configure the latest ROSA CLI and OpenShift Container Platform CLI\. For more information, see [Getting started with the ROSA CLI](https://docs.openshift.com/rosa/rosa_cli/rosa-get-started-cli.html#rosa-setting-up-cli_rosa-getting-started-cli)\.
-+  Service Quotas must have the required service quotas set for Amazon EC2, Amazon VPC, Amazon EBS, and Elastic Load Balancing that are needed to create and run a ROSA cluster\. To view the required quotas, see [Red Hat’s documentation on required AWS service quotas](https://docs.openshift.com/rosa/rosa_install_access_delete_clusters/rosa_getting_started_iam/rosa-required-aws-service-quotas.html#rosa-required-aws-service-quotas)\. For more information about Service Quotas, see [Required AWS service quotas](https://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html)\.
-+  AWS requires enabling AWS Business, Enterprise On\-Ramp, or Enterprise support plans for ROSA support\. Red Hat might request AWS Support on your behalf and request AWS resource quota increases as required for issue resolution\. For more information, see [AWS Support](http://aws.amazon.com/premiumsupport/) and [AWS prerequisites for ROSA](https://docs.openshift.com/rosa/rosa_install_access_delete_clusters/rosa_getting_started_iam/rosa-aws-prereqs.html#prerequisites)\.
-+ If you’re using AWS Organizations to manage the AWS accounts that host the ROSA service, the organization’s service control policy \(SCP\) must be configured to allow Red Hat to perform policy actions that’s listed in the SCP without restriction\. For more information about AWS and Red Hat infrastructure requirements for ROSA, see [AWS prerequisites for ROSA](https://docs.openshift.com/rosa/rosa_install_access_delete_clusters/rosa_getting_started_iam/rosa-aws-prereqs.html#prerequisites) in the Red Hat OpenShift documentation\. For more information about SCPs, see [Service control policies \(SCPs\)](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html)\.
++  Service Quotas must have the required service quotas set for Amazon EC2, Amazon VPC, Amazon EBS, and Elastic Load Balancing that are needed to create and run a ROSA cluster\. AWS or Red Hat may request service quota increases on your behalf as required for issue resolution\. To view the required quotas, see [ROSA service quotas](service-quotas-rosa.md)\. For more general information about Service Quotas, see [AWS service quotas](https://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html) in the * AWS General Reference*\.
++ To receive AWS support for ROSA, you must enable AWS Business, Enterprise On\-Ramp, or Enterprise support plans\. Red Hat may request AWS support on your behalf as required for issue resolution\. For more information, see [Support for ROSA](troubleshooting-rosa.md#rosa-support)\. To enable AWS Support, see the [AWS Support page](http://aws.amazon.com/premiumsupport/)\.
++ If you’re using AWS Organizations to manage the AWS accounts that host the ROSA service, the organization’s service control policy \(SCP\) must be configured to allow Red Hat to perform policy actions that’s listed in the SCP without restriction\. For more information, see the [ROSA SCP troubleshooting documentation](troubleshoot-rosa-enablement.md#error-aws-orgs-scp-denies-permissions)\. For more information about SCPs, see [Service control policies \(SCPs\)](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html)\.
 + If deploying a ROSA cluster with AWS STS into an enabled AWS Region that’s disabled by default, you must update the security token to version 2 for all the Regions in the AWS account with the following command\.
 
   ```
@@ -24,115 +35,23 @@ Before getting started, make sure you completed these actions:
 
   For more information about enabling Regions, see [Managing AWS Regions](https://docs.aws.amazon.com/general/latest/gr/rande-manage.html) in the *AWS General Reference*\.
 
-## Step 1: Enable ROSA<a name="getting-started-sts-auto-step-1"></a>
+## Step 1: Verify ROSA prerequisites<a name="getting-started-sts-auto-step-1"></a>
 
-ROSA can be enabled in the AWS Management Console\.
+To create a ROSA cluster, your AWS account must meet the prerequisites to use ROSA\. The AWS ROSA console verifies if your account has the necessary AWS Marketplace permissions, service quotas, and the Elastic Load Balancing \(ELB\) service\-linked role named `AWSServiceRoleForElasticLoadBalancing`\. If any of these prerequisites are missing, the ROSA console page provides guidance on how to configure your account to meet the prerequisites\.
 
-1. Navigate to [Red Hat OpenShift on AWS](https://console.aws.amazon.com/rosa/home)\.
+1. Navigate to the [ROSA console](https://console.aws.amazon.com/rosa)\.
 
-1. Choose **Enable ROSA**\.
+1. Choose **Get started**\.
 
-## Step 2: Create the Elastic Load Balancing role<a name="getting-started-sts-auto-step-2"></a>
+1. On the **Verify ROSA prerequisites** page, select **I agree to share my contact information with Red Hat**\.
 
-To create a ROSA cluster, the `AWSServiceRoleForElasticLoadBalacing` role must be in place\.
+1. Choose **Enable ROSA **\.
 
-**Note**  
-If you don’t properly configure the Elastic Load Balancing role and attempt to create a ROSA cluster, the following error message is returned: `Error creating network Load Balancer: AccessDenied`\.
+1. Once the page has verified your service quotas meet ROSA prerequisites and the ELB service\-linked role is created, open a new terminal session to create your first ROSA cluster using the ROSA CLI\.
 
-1. Check if the `AWSServiceRoleForElasticLoadBalancing` role exists for your account by running the following command\.
+## Step 2: Create a ROSA cluster with AWS STS using the default `auto` mode<a name="getting-started-sts-auto-step-2"></a>
 
-   ```
-   aws iam get-role --role-name "AWSServiceRoleForElasticLoadBalancing"
-   ```
-
-   The following output confirms the role exists\.
-
-   ```
-   ROLE    arn:aws:iam::<aws_account_number>:role/aws-service-role/elasticloadbalancing.amazonaws.com/AWSServiceRoleForElasticLoadBalancing  2018-09-27T19:49:23+00:00       Allows ELB to call AWS services on your behalf. 3600      /aws-service-role/elasticloadbalancing.amazonaws.com/   <role_id>   AWSServiceRoleForElasticLoadBalancing
-   ASSUMEROLEPOLICYDOCUMENT        2012-10-17
-   STATEMENT       sts:AssumeRole  Allow
-   PRINCIPAL       elasticloadbalancing.amazonaws.com
-   ROLELASTUSED    2022-01-06T09:27:57+00:00       us-east-1
-   ```
-
-1. If the role doesn’t exist, create it by running the following command\.
-
-   ```
-   aws iam create-service-linked-role --aws-service-name "elasticloadbalancing.amazonaws.com"
-   ```
-
-## Step 3: Create a ROSA cluster with AWS STS using the default `auto` mode<a name="getting-started-sts-auto-step-3"></a>
-
-You can create a ROSA cluster using AWS Security Token Service \(AWS STS\)\. To create a cluster quickly, use the default `auto` method that’s provided in the Red Hat OpenShift Cluster Manager \(OCM\) or the ROSA CLI\. This section provides steps on how to create a cluster using the `auto` method for both OCM and the ROSA CLI\.
-
-### Create a ROSA cluster using OpenShift Cluster Manager \(OCM\)<a name="_create_a_rosa_using_openshift_cluster_manager_ocm"></a>
-
-When using Red Hat OpenShift Cluster Manager \(OCM\) and AWS STS to create a ROSA cluster, you can select the default options to create a cluster quicker\.
-
-**Important**  
-Only public and AWS PrivateLink clusters are supported with AWS STS\. Regular private clusters \(non\-AWS PrivateLink\) aren’t available for use with AWS STS\.  
-For information about deploying private \(non\-AWS PrivateLink\) clusters, see [Configuring a private cluster](https://docs.openshift.com/rosa/rosa_cluster_admin/cloud_infrastructure_access/rosa-private-cluster.html)\.  
-For more information about different ways to get started with ROSA, see [Getting started with ROSA](getting-started.md)\.
-
-1. Navigate to [OpenShift Cluster Manager](https://console.redhat.com/openshift) and choose **Create cluster **\.
-
-1. On the **Create an OpenShift cluster ** page, scroll down to the **Red Hat OpenShift on AWS \(ROSA\)** row under **Managed services** and choose **Create cluster **\.
-
-1. Choose the checkbox to acknowledge you read and completed the prerequisites\.
-
-1. For **Associated AWS account **, choose an AWS account\. If no associated accounts are found, choose **Associate AWS account ** and follow the wizard prompts to associate a new account\.
-
-1. If the required IAM account roles aren’t detected automatically and listed on the **Accounts and roles** page, create the required account\-wide roles and policies in the ROSA CLI and choose **Refresh ARNs**\.
-
-   ```
-   rosa create account-roles
-   ```
-
-1. Choose **Next**\.
-
-1. On the ** Cluster details** page, provide a name for your cluster and specify the cluster details\.
-**Note**  
-Select **Enable additional etcd encryption** if you require etcd key value encryption\. With this option, etcd key values are encrypted, but not the keys\.  
-With etcd encryption enabled, you incur a performance overhead of approximately 20%\. The overhead is a result of introducing this second layer of encryption, in addition to the default control plane storage encryption for etcd volumes\. Consider enabling etcd encryption only if you require it for your use case\.  
-![\[sample ROSA <shared id="cluster"/> configuration on the OCM console Cluster details page\]](http://docs.aws.amazon.com/ROSA/latest/userguide/images/ocm-rosa-cluster-settings.png)
-
-1. Choose **Next**\.
-
-1. On the **Default machine pool** page, choose a compute node instance type\.
-
-1. \(Optional\) Configure auto scaling for the default machine pool\.
-
-   1. Choose **Enable autoscaling** to automatically scale the number of machines in your default machine pool to meet deployment needs\.
-
-   1. Set the minimum and maximum node count quotas for auto scaling\. The cluster autoscaler doesn’t reduce or increase the default machine pool node count beyond the quotas that you specify\.
-
-1. Choose **Next**\.
-
-1. On the **Networking configuration** page, choose **Public** or **Private** and then choose **Next**\.
-**Important**  
-If you use private API endpoints, you must use an existing VPC and AWS PrivateLink\. You can’t access your cluster until you update the network settings in your account\.
-
-1. On the **CIDR ranges** page, configure custom classless inter\-domain routing \(CIDR\) ranges or use the defaults that are provided and choose **Next**\.
-**Important**  
-CIDR configurations can’t be changed later\. Confirm your selections with your network administrator before proceeding\.
-
-1. On the ** Cluster roles and policies** page, choose **Auto** and then choose **Next**\.
-
-1. On the ** Cluster update strategy** page, leave **Individual updates** selected and choose **Next**\.
-
-1. Review your cluster configuration and choose **Create cluster **\.
-**Note**  
-If the provisioning process fails or the `State` field doesn’t change to the ready status after 40 minutes, check the troubleshooting documentation for details\. For more information, see [Troubleshooting installations](https://docs.openshift.com/rosa/rosa_support/rosa-troubleshooting-installations.html)\.  
-To contact Red Hat Support for assistance, see [Getting support for Red Hat OpenShift on AWS](https://docs.openshift.com/rosa/rosa_architecture/rosa-getting-support.html#rosa-getting-support)\.
-
-### Create a ROSA cluster using the ROSA CLI<a name="_create_a_rosa_using_the_rosa_cli"></a>
-
-When using the ROSA CLI and AWS STS to create a ROSA cluster, you can select the default options for the cluster to be created quicker\.
-
-**Important**  
-Only public and AWS PrivateLink clusters are supported with AWS STS\. Regular private clusters \(non\-AWS PrivateLink\) aren’t available for use with AWS STS\.  
-For information about deploying private \(non\-AWS PrivateLink\) clusters, see [Configuring a private cluster](https://docs.openshift.com/rosa/rosa_cluster_admin/cloud_infrastructure_access/rosa-private-cluster.html)\.  
-For more information about different ways to get started with ROSA, see [Getting started with ROSA](getting-started.md)\.
+You can create a ROSA cluster using AWS Security Token Service \(AWS STS\)\. To create a cluster quickly, use the default `auto` method that’s provided in the ROSA CLI\.
 
 1. Create the required account\-wide roles and policies, including the operator policies\.
 
@@ -154,8 +73,8 @@ When you specify `--mode auto`, the `rosa create cluster` command creates the cl
    rosa describe cluster --cluster <cluster_name|cluster_id>
    ```
 **Note**  
-If the provisioning process fails or the `State` field doesn’t change to a ready status after 40 minutes, check the troubleshooting documentation for details\. For more information, see [Troubleshooting installations](https://docs.openshift.com/rosa/rosa_support/rosa-troubleshooting-installations.html)\.  
-To contact Red Hat Support for assistance, see [Getting support for Red Hat OpenShift Service on AWS](https://docs.openshift.com/rosa/rosa_architecture/rosa-getting-support.html#rosa-getting-support)\.
+If the provisioning process fails or the `State` field doesn’t change to a ready status after 40 minutes, see [Troubleshoot ROSA cluster provisioning issues](troubleshoot-rosa-cluster-provisioning.md)\.  
+To contact AWS Support or Red Hat support for assistance, see [Support for ROSA](troubleshooting-rosa.md#rosa-support)\.
 
 1. Track the progress of the cluster creation by watching the OpenShift installer logs\.
 
@@ -163,7 +82,7 @@ To contact Red Hat Support for assistance, see [Getting support for Red Hat Open
    rosa logs install --cluster <cluster_name|cluster_id> --watch
    ```
 
-## Step 4: Create a cluster administrator for quick cluster access<a name="getting-started-sts-auto-step-4"></a>
+## Step 3: Create a cluster administrator for quick cluster access<a name="getting-started-sts-auto-step-3"></a>
 
 Before configuring an identity provider, you can create a user with `cluster-admin` permissions for immediate access to your ROSA cluster\.
 
@@ -173,7 +92,7 @@ Before configuring an identity provider, you can create a user with `cluster-adm
    rosa create admin --cluster=<cluster_name>
    ```
 **Note**  
-It might a minute or so for the account to become active\.
+The account may take 1\-2 minutes to become active\.
 
 1. Securely store the generated password in the command output\. If you lose this password, delete and recreate the `cluster-admin` user to regain access\.
 
@@ -194,9 +113,9 @@ It might a minute or so for the account to become active\.
    oc whoami
    ```
 
-## Step 5: Configure an identify provider and grant cluster access<a name="getting-started-sts-auto-step-5"></a>
+## Step 4: Configure an identify provider and grant cluster access<a name="getting-started-sts-auto-step-4"></a>
 
-ROSA includes a built\-in OAuth server\. After your ROSA cluster is created, you must configure OAuth to use an identity provider\. You can then add users to your configured identity provider to grant them access to your cluster\. You can grant these users `cluster-admin` or `dedicated-admin` permissions as required\.
+ ROSA includes a built\-in OAuth server\. After your ROSA cluster is created, you must configure OAuth to use an identity provider\. You can then add users to your configured identity provider to grant them access to your cluster\. You can grant these users `cluster-admin` or `dedicated-admin` permissions as required\.
 
 You can configure different identify provider types for your ROSA cluster\. Supported types include GitHub, GitHub Enterprise, GitLab, Google, LDAP, OpenID Connect, and HTPasswd identify providers\.
 
@@ -258,7 +177,7 @@ It might take approximately two minutes for the identity provider configuration 
    rosa list idps --cluster=<cluster_name>
    ```
 
-## Step 6: Grant user access to a cluster<a name="getting-started-sts-auto-step-6"></a>
+## Step 5: Grant user access to a cluster<a name="getting-started-sts-auto-step-5"></a>
 
 You can grant a user access to your ROSA cluster by adding them to the configured identity provider\.
 
@@ -268,7 +187,7 @@ The following procedure adds a user to a GitHub organization that’s configured
 
 1. Invite users that require ROSA cluster access to your GitHub organization\. For more information, see [Inviting users to join your organization](https://docs.github.com/en/organizations/managing-membership-in-your-organization/inviting-users-to-join-your-organization) in the GitHub documentation\.
 
-## Step 7: Grant administrator permissions to a user<a name="getting-started-sts-auto-step-7"></a>
+## Step 6: Grant administrator permissions to a user<a name="getting-started-sts-auto-step-6"></a>
 
 After you add a user to your configured identity provider, you can grant the user `cluster-admin` or `dedicated-admin` permissions for your ROSA cluster\.
 
@@ -300,7 +219,7 @@ After you add a user to your configured identity provider, you can grant the use
    rosa list users --cluster=<cluster_name>
    ```
 
-## Step 8: Access a cluster through the web console<a name="getting-started-sts-auto-step-8"></a>
+## Step 7: Access a cluster through the web console<a name="getting-started-sts-auto-step-7"></a>
 
 After you create a cluster administrator user or added a user to your configured identity provider, you can log in to your ROSA cluster through the web console\.
 
@@ -314,7 +233,7 @@ After you create a cluster administrator user or added a user to your configured
    + If you created a `cluster-admin` user, log in using the provided credentials\.
    + If you configured an identity provider for your cluster, choose the identity provider name in the **Log in with…​** dialog and complete any authorization requests presented by your provider\.
 
-## Step 9: Deploy an application from the Developer Catalog<a name="getting-started-sts-auto-step-9"></a>
+## Step 8: Deploy an application from the Developer Catalog<a name="getting-started-sts-auto-step-8"></a>
 
 From the OpenShift Cluster Manager \(OCM\), you can deploy a Developer Catalog test application and expose it with a route\.
 
@@ -360,7 +279,7 @@ The new application takes several minutes to deploy\.
 
    1. Open the action menu for your project and choose **Delete Project**\.
 
-## Step 10: Revoke administrator permissions and user access<a name="getting-started-sts-auto-step-10"></a>
+## Step 9: Revoke administrator permissions and user access<a name="getting-started-sts-auto-step-9"></a>
 
 You can revoke `cluster-admin` or `dedicated-admin` permissions from a user by using the ROSA CLI\.
 
@@ -404,7 +323,7 @@ You can configure different types of identity providers for your ROSA cluster\. 
 
 1. Remove the user from your GitHub organization\. For more information, see [Removing a member from your organization](https://docs.github.com/en/organizations/managing-membership-in-your-organization/removing-a-member-from-your-organization) in the GitHub documentation\.
 
-## Step 11: Delete a ROSA cluster and AWS STS resources<a name="getting-started-sts-auto-step-11"></a>
+## Step 10: Delete a ROSA cluster and AWS STS resources<a name="getting-started-sts-auto-step-10"></a>
 
 You can use the ROSA CLI to delete a ROSA cluster that uses the AWS Security Token Service \(AWS STS\)\. You can also use the ROSA CLI to delete the AWS Identity and Access Management \(IAM\) account\-wide roles, the cluster\-specific operator roles, and the OpenID Connect \(OIDC\) provider\. To delete the account\-wide inline and operator policies, you can use the IAM console\.
 
@@ -417,7 +336,7 @@ Account\-wide IAM roles and policies might be used by other ROSA clusters in the
    rosa delete cluster --cluster=<cluster_name> --watch
    ```
 **Important**  
-You must wait for clusterto delete completely before you remove the IAM roles, policies, and OIDC provider\. The account\-wide roles are required to delete the resources created by the installer\. The cluster specific operator roles are required to clean up the resources created by the OpenShift operators\. The operators use the OIDC provider to authenticate\.
+You must wait for the cluster to delete completely before you remove the IAM roles, policies, and OIDC provider\. The account\-wide roles are required to delete the resources created by the installer\. The cluster specific operator roles are required to clean up the resources created by the OpenShift operators\. The operators use the OIDC provider to authenticate\.
 
 1. Delete the OIDC provider that the cluster operators use to authenticate by running the following command\.
 

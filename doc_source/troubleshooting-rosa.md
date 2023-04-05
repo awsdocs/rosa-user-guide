@@ -1,19 +1,25 @@
 # Troubleshooting<a name="troubleshooting-rosa"></a>
 
-This topic covers how to troubleshoot problems that you might encounter when you create and deploy ROSA clusters\.
+The following documentation covers how to troubleshoot issues that might occur when enabling ROSA and provisioning ROSA clusters\.
 
-## Troubleshooting permissions<a name="troubleshoot-iam-permissions"></a>
+**Topics**
++ [Support for ROSA](#rosa-support)
++ [Troubleshoot ROSA enablement errors in the ROSA console](troubleshoot-rosa-enablement.md)
++ [Troubleshoot ROSA cluster provisioning issues](troubleshoot-rosa-cluster-provisioning.md)
++ [Troubleshoot non\-STS ROSA cluster issues](troubleshoot-non-sts-rosa-clusters.md)
 
-When you use ROSA, you receive support from both Red Hat and AWS\. Before you can receive support from Red Hat, specifically Red Hat site reliability engineers \(SRE\), you must meet several requirements\. For information about these requirements, see the Red Hat OpenShift [minimum required service control policy documentation](https://docs.openshift.com/rosa/rosa_install_access_delete_clusters/rosa_getting_started_iam/rosa-aws-prereqs.html#rosa-minimum-scp_prerequisites)\.
+## Support for ROSA<a name="rosa-support"></a>
 
-Run the following command to verify that your AWS account has the correct permissions\.
+With ROSA, you can also receive troubleshooting support from AWS Support and the Red Hat support teams\. Support cases can be opened with either organization, and are routed to the correct team to resolve your issue\.
 
-```
-rosa verify permissions
-```
+### AWS Support<a name="w43aac11b7b5"></a>
 
-If you encounter an error, double check if it’s because a [service control policy](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html#orgs_manage_policies_scp) \(SCP\) isn’t applied to your AWS account\. If you’re required to use an SCP, see the [Red Hat Requirements for Customer Cloud Subscriptions](https://docs.openshift.com/rosa/rosa_install_access_delete_clusters/rosa_getting_started_iam/rosa-aws-prereqs.html#rosa-minimum-scp_prerequisites) policies page for more information about the minimum required SCP\.
+To receive AWS Support, you must first enable AWS Business, Enterprise On\-Ramp, or Enterprise support plans\. For more information about AWS Support plans, see [AWS Support](http://aws.amazon.com/premiumsupport/)\.
 
-## Troubleshooting ROSA enablement<a name="troubleshooting-rosa-enablement"></a>
+For steps to enable an AWS Support plan, see [How do I sign up for an AWS Support plan?](http://aws.amazon.com/premiumsupport/knowledge-center/sign-up-support/) 
 
-ROSA uses AWS Marketplace to facilitate subscription management, billing, and metering\. When you enable this service, the Red Hat console subscribes to AWS Marketplace\. To enable this service, your IAM principal requires `aws-marketplace` subscription permissions\. AWS provides a managed IAM policy that includes the minimum permissions that are necessary to enable ROSA in the AWS Management Console and to manage the ROSA AWS Marketplace subscription\. For more information, see [AWS managed policy: ROSAManageSubscription](security-iam-awsmanpol.md)\.
+For information about creating a support case, see [Creating support cases and case management](https://docs.aws.amazon.com/awssupport/latest/user/case-management.html)\.
+
+### Red Hat Support<a name="red-hat-support"></a>
+
+ ROSA includes Red Hat Premium Support\. To receive Red Hat Premium Support, navigate to the [Red Hat Customer Portal](https://access.redhat.com/support/) and use the support case tool to create a support ticket\. For more information, see [How to engage with Red Hat support](https://access.redhat.com/start/how-to-engage-red-hat-support)\.

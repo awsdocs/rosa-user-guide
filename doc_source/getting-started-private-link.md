@@ -1,19 +1,34 @@
 # Getting started with ROSA using AWS PrivateLink<a name="getting-started-private-link"></a>
 
-ROSA clusters can be deployed in a few different ways: public, private, or private with AWS PrivateLink\. For both public and private cluster configurations, the OpenShift cluster has access to the internet, and privacy is set on the application workloads at the application layer\. If you require both the OpenShift cluster and the application workloads to be private, you can configure an AWS PrivateLink cluster on ROSA\.
+ ROSA clusters can be deployed in a few different ways: public, private, or private with AWS PrivateLink\. For both public and private cluster configurations, the OpenShift cluster has access to the internet, and privacy is set on the application workloads at the application layer\. If you require both the OpenShift cluster and the application workloads to be private, you can configure an AWS PrivateLink cluster on ROSA\.
 
 With ROSA PrivateLink clusters, Red Hat Site Reliability Engineering \(SRE\) teams no longer require the cluster to be public to monitor or perform actions on your behalf\. Instead, the SRE teams can access the cluster by using a private subnet connected to the cluster’s PrivateLink endpoint\.
 
 For more information about AWS PrivateLink, see [What is AWS PrivateLink?](https://docs.aws.amazon.com/vpc/latest/privatelink/what-is-privatelink.html) 
 
+**Topics**
++ [Prerequisites](#getting-started-private-link-prereqs)
++ [Step 1: Verify ROSA prerequisites](#_step_1_verify_prerequisites)
++ [Step 2: Create Amazon VPC architecture for the AWS PrivateLink use case](#getting-started-private-link-step-2)
++ [Step 3: Create an AWS PrivateLink cluster](#getting-started-private-link-step-3)
++ [Step 4: Configure AWS PrivateLink DNS forwarding](#getting-started-private-link-step-4)
++ [Step 5: Create a cluster administrator for quick cluster access](#getting-started-private-link-step-5)
++ [Step 6: Configure an identify provider and grant cluster access](#getting-started-private-link-step-6)
++ [Step 7: Grant user access to a cluster](#getting-started-private-link-step-7)
++ [Step 8: Grant administrator permissions to a user](#getting-started-private-link-step-8)
++ [Step 9: Access a cluster through the web console](#getting-started-private-link-step-9)
++ [Step 10: Deploy an application from the Developer Catalog](#getting-started-private-link-step-10)
++ [Step 11: Revoke administrator permissions and user access](#getting-started-private-link-step-11)
++ [Step 12: Delete a ROSA cluster and AWS STS resources](#getting-started-private-link-step-12)
+
 ## Prerequisites<a name="getting-started-private-link-prereqs"></a>
 
-Before getting started, make sure you complete these actions:
+Before getting started, make sure you completed these actions:
 + Install and configure the latest AWS CLI\. For more information, see [Installing or updating the latest version of the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)\.
-+ Install and configure the latest ROSA CLI and OpenShift Container Platform CLI\. For more information, see [Getting started with the rosa CLI](https://docs.openshift.com/rosa/rosa_cli/rosa-get-started-cli.html#rosa-setting-up-cli_rosa-getting-started-cli)\.
-+  Service Quotas must have the required service quotas set for Amazon EC2, Amazon VPC, Amazon EBS, and Elastic Load Balancing that are needed to create and run a ROSA cluster\. To view the required quotas, see [Red Hat’s documentation on required AWS service quotas](https://docs.openshift.com/rosa/rosa_install_access_delete_clusters/rosa_getting_started_iam/rosa-required-aws-service-quotas.html#rosa-required-aws-service-quotas)\. For more information about Service Quotas, see [Required AWS service quotas](https://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html)\.
-+  AWS requires enabling AWS Business, Enterprise On\-Ramp, or Enterprise support plans for ROSA support\. Red Hat might request AWS Support on your behalf and request AWS resource quota increases as required for your requirements\. For more information, see [AWS Support](http://aws.amazon.com/premiumsupport/) and [AWS prerequisites for ROSA](https://docs.openshift.com/rosa/rosa_install_access_delete_clusters/rosa_getting_started_iam/rosa-aws-prereqs.html#prerequisites) in the Red Hat OpenShift documentation\.
-+ If you’re using AWS Organizations to manage the AWS accounts that host the ROSA service, your organization’s service control policy \(SCP\) must be configured to allow Red Hat to perform policy actions that are listed in the SCP without restriction\. For more information about AWS and Red Hat infrastructure requirements for ROSA, see [AWS prerequisites for ROSA](https://docs.openshift.com/rosa/rosa_install_access_delete_clusters/rosa_getting_started_iam/rosa-aws-prereqs.html#prerequisites) in the Red Hat OpenShift documentation\. For more information about SCPs, see [Service control policies \(SCPs\)](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html)\.
++ Install and configure the latest ROSA CLI and OpenShift Container Platform CLI\. For more information, see [Getting started with the ROSA CLI](https://docs.openshift.com/rosa/rosa_cli/rosa-get-started-cli.html#rosa-setting-up-cli_rosa-getting-started-cli)\.
++  Service Quotas must have the required service quotas set for Amazon EC2, Amazon VPC, Amazon EBS, and Elastic Load Balancing that are needed to create and run a ROSA cluster\. AWS or Red Hat may request service quota increases on your behalf as required for issue resolution\. To view the required quotas, see [ROSA service quotas](service-quotas-rosa.md)\. For more general information about Service Quotas, see [AWS service quotas](https://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html) in the * AWS General Reference*\.
++ To receive AWS support for ROSA, you must enable AWS Business, Enterprise On\-Ramp, or Enterprise support plans\. Red Hat may request AWS support on your behalf as required for issue resolution\. For more information, see [Support for ROSA](troubleshooting-rosa.md#rosa-support)\. To enable AWS Support, see the [AWS Support page](http://aws.amazon.com/premiumsupport/)\.
++ If you’re using AWS Organizations to manage the AWS accounts that host the ROSA service, the organization’s service control policy \(SCP\) must be configured to allow Red Hat to perform policy actions that’s listed in the SCP without restriction\. For more information, see the [ROSA SCP troubleshooting documentation](troubleshoot-rosa-enablement.md#error-aws-orgs-scp-denies-permissions)\. For more information about SCPs, see [Service control policies \(SCPs\)](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html)\.
 + If deploying a ROSA cluster with AWS STS into an enabled AWS Region that’s disabled by default, you must update the security token to version 2 for all the Regions in the AWS account with the following command\.
 
   ```
@@ -22,44 +37,21 @@ Before getting started, make sure you complete these actions:
 
   For more information about enabling Regions, see [Managing AWS Regions](https://docs.aws.amazon.com/general/latest/gr/rande-manage.html) in the *AWS General Reference*\.
 
-## Step 1: Enable ROSA<a name="getting-started-private-link-step-1"></a>
+## Step 1: Verify ROSA prerequisites<a name="_step_1_verify_prerequisites"></a>
 
-ROSA can be enabled in the AWS Management Console by following these steps\.
+To create a ROSA cluster, your AWS account must meet the prerequisites to use ROSA\. The AWS ROSA console verifies if your account has the necessary AWS Marketplace permissions, service quotas, and the Elastic Load Balancing \(ELB\) service\-linked role named `AWSServiceRoleForElasticLoadBalancing`\. If any of these prerequisites are missing, the ROSA console page provides guidance on how to configure your account to meet the prerequisites\.
 
-1. Navigate to [Red Hat OpenShift on AWS](https://console.aws.amazon.com/rosa/home)\.
+1. Navigate to the [ROSA console](https://console.aws.amazon.com/rosa)\.
 
-1. Choose **Enable ROSA**\.
+1. Choose **Get started**\.
 
-## Step 2: Create the Elastic Load Balancing role<a name="getting-started-private-link-step-2"></a>
+1. On the **Verify ROSA prerequisites** page, select **I agree to share my contact information with Red Hat**\.
 
-To create a ROSA cluster, the `AWSServiceRoleForElasticLoadBalacing` role must be in place\.
+1. Choose **Enable ROSA **\.
 
-**Note**  
-If you didn’t properly configure the Elastic Load Balancing role and attempt to create a ROSA cluster, you receive the following error message: `Error creating network Load Balancer: AccessDenied`\.
+1. Once the page has verified your service quotas meet ROSA prerequisites and the ELB service\-linked role is created, open a new terminal session to create your first ROSA cluster using the ROSA CLI\.
 
-1. Check if the `AWSServiceRoleForElasticLoadBalancing` role exists for your account by running the following command\.
-
-   ```
-   aws iam get-role --role-name "AWSServiceRoleForElasticLoadBalancing"
-   ```
-
-   The following output confirms the role exists\.
-
-   ```
-   ROLE    arn:aws:iam::<aws_account_number>:role/aws-service-role/elasticloadbalancing.amazonaws.com/AWSServiceRoleForElasticLoadBalancing  2018-09-27T19:49:23+00:00       Allows ELB to call AWS services on your behalf. 3600      /aws-service-role/elasticloadbalancing.amazonaws.com/   <role_id>   AWSServiceRoleForElasticLoadBalancing
-   ASSUMEROLEPOLICYDOCUMENT        2012-10-17
-   STATEMENT       sts:AssumeRole  Allow
-   PRINCIPAL       elasticloadbalancing.amazonaws.com
-   ROLELASTUSED    2022-01-06T09:27:57+00:00       us-east-1
-   ```
-
-1. If the role doesn’t exist, create one by running the following command\.
-
-   ```
-   aws iam create-service-linked-role --aws-service-name "elasticloadbalancing.amazonaws.com"
-   ```
-
-## Step 3: Create Amazon VPC architecture for the AWS PrivateLink use case<a name="getting-started-private-link-step-3"></a>
+## Step 2: Create Amazon VPC architecture for the AWS PrivateLink use case<a name="getting-started-private-link-step-2"></a>
 
 To create a ROSA private cluster with AWS PrivateLink, you must first configure your own Amazon Virtual Private Cloud \(VPC\) architecture to deploy your solution into\. The following procedure uses the AWS CLI to create both a public and private subnet\. All cluster resources are in the private subnet\. The public subnet routes outbound traffic by using a NAT gateway to the internet\.
 
@@ -165,7 +157,7 @@ aws ec2 describe-instance-type-offerings --location-type availability-zone --fil
    aws ec2 associate-route-table --subnet-id subnet-00964ef8b1a168d36 --route-table-id rtb-0614a89d026794f7a
    ```
 
-## Step 4: Create an AWS PrivateLink cluster<a name="getting-started-private-link-step-4"></a>
+## Step 3: Create an AWS PrivateLink cluster<a name="getting-started-private-link-step-3"></a>
 
 With AWS PrivateLink, you can use the ROSA CLI to create a cluster with a single Availability Zone \(Single\-AZ\) or multiple Availability Zones \(Multi\-AZ\)\. In either case, your machine’s CIDR value must match your VPC’s CIDR value\.
 
@@ -209,7 +201,7 @@ It might take up to 40 minutes for the cluster `State` field to show the `ready`
    rosa logs install --cluster=<cluster_name> --watch
    ```
 
-## Step 5: Configure AWS PrivateLink DNS forwarding<a name="getting-started-private-link-step-5"></a>
+## Step 4: Configure AWS PrivateLink DNS forwarding<a name="getting-started-private-link-step-4"></a>
 
 With AWS PrivateLink clusters, a public hosted zone and a private hosted zone are created in Route 53\. With the private hosted zone, records within the zone are resolvable only from within the VPC that it’s assigned to\.
 
@@ -249,7 +241,7 @@ After the Route 53 Resolver internal endpoint is associated and operational, co
 
 1. If you’re configuring your remote network DNS server, see your specific DNS server documentation to configure selective DNS forwarding for the installed cluster domain\.
 
-## Step 6: Create a cluster administrator for quick cluster access<a name="getting-started-private-link-step-6"></a>
+## Step 5: Create a cluster administrator for quick cluster access<a name="getting-started-private-link-step-5"></a>
 
 Before configuring an identity provider, you can create a user with `cluster-admin` permissions for immediate access to your ROSA cluster\.
 
@@ -280,9 +272,9 @@ It might take a minute or so for the account to become active\.
    oc whoami
    ```
 
-## Step 7: Configure an identify provider and grant cluster access<a name="getting-started-private-link-step-7"></a>
+## Step 6: Configure an identify provider and grant cluster access<a name="getting-started-private-link-step-6"></a>
 
-ROSA includes a built\-in OAuth server\. After your ROSA cluster is created, you must configure OAuth to use an identity provider\. You can then add users to your configured identity provider to grant them access to your cluster\. You can grant these users `cluster-admin` or `dedicated-admin` permissions as required\.
+ ROSA includes a built\-in OAuth server\. After your ROSA cluster is created, you must configure OAuth to use an identity provider\. You can then add users to your configured identity provider to grant them access to your cluster\. You can grant these users `cluster-admin` or `dedicated-admin` permissions as required\.
 
 You can configure different identify provider types for your ROSA cluster\. The supported types include GitHub, GitHub Enterprise, GitLab, Google, LDAP, OpenID Connect, and HTPasswd identify providers\.
 
@@ -344,7 +336,7 @@ It might take around two minutes for the identity provider configuration to beco
    rosa list idps --cluster=<cluster_name>
    ```
 
-## Step 8: Grant user access to a cluster<a name="getting-started-private-link-step-8"></a>
+## Step 7: Grant user access to a cluster<a name="getting-started-private-link-step-7"></a>
 
 You can grant a user access to your ROSA cluster by adding them to the configured identity provider\.
 
@@ -354,7 +346,7 @@ The following procedure adds a user to a GitHub organization that’s configured
 
 1. Invite users that require ROSA cluster access to your GitHub organization\. For more information, see [Inviting users to join your organization](https://docs.github.com/en/organizations/managing-membership-in-your-organization/inviting-users-to-join-your-organization) in the GitHub documentation\.
 
-## Step 9: Grant administrator permissions to a user<a name="getting-started-private-link-step-9"></a>
+## Step 8: Grant administrator permissions to a user<a name="getting-started-private-link-step-8"></a>
 
 After you added a user to your configured identity provider, you can grant the user `cluster-admin` or `dedicated-admin` permissions for your ROSA cluster\.
 
@@ -386,7 +378,7 @@ After you added a user to your configured identity provider, you can grant the u
    rosa list users --cluster=<cluster_name>
    ```
 
-## Step 10: Access a cluster through the web console<a name="getting-started-private-link-step-10"></a>
+## Step 9: Access a cluster through the web console<a name="getting-started-private-link-step-9"></a>
 
 After you created a cluster administrator user or added a user to your configured identity provider, you can log in to your ROSA cluster through the web console\.
 
@@ -400,7 +392,7 @@ After you created a cluster administrator user or added a user to your configure
    + If you created a `cluster-admin` user, log in using the provided credentials\.
    + If you configured an identity provider for your cluster, choose the identity provider name in the **Log in with…​** dialog and complete any authorization requests presented by your provider\.
 
-## Step 11: Deploy an application from the Developer Catalog<a name="getting-started-private-link-step-11"></a>
+## Step 10: Deploy an application from the Developer Catalog<a name="getting-started-private-link-step-10"></a>
 
 From the OpenShift Cluster Manager \(OCM\), you can deploy a Developer Catalog test application and expose it with a route\.
 
@@ -446,7 +438,7 @@ The new application takes several minutes to deploy\.
 
    1. Open the action menu for your project and choose **Delete Project**\.
 
-## Step 12: Revoke administrator permissions and user access<a name="getting-started-private-link-step-12"></a>
+## Step 11: Revoke administrator permissions and user access<a name="getting-started-private-link-step-11"></a>
 
 You can revoke `cluster-admin` or `dedicated-admin` permissions from a user by using the ROSA CLI\.
 
@@ -490,7 +482,7 @@ You can configure different types of identity providers for your ROSA cluster\. 
 
 1. Remove the user from your GitHub organization\. For more information, see [Removing a member from your organization](https://docs.github.com/en/organizations/managing-membership-in-your-organization/removing-a-member-from-your-organization) in the GitHub documentation\.
 
-## Step 13: Delete a ROSA cluster and AWS STS resources<a name="getting-started-private-link-step-13"></a>
+## Step 12: Delete a ROSA cluster and AWS STS resources<a name="getting-started-private-link-step-12"></a>
 
 You can use the ROSA CLI to delete a ROSA cluster that uses the AWS Security Token Service \(AWS STS\)\. You can also use the ROSA CLI to delete the AWS Identity and Access Management \(IAM\) account\-wide roles, the cluster\-specific operator roles, and the OpenID Connect \(OIDC\) provider\. To delete the account\-wide inline and operator policies, you can use the IAM console\.
 

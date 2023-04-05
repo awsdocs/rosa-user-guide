@@ -56,4 +56,4 @@ View details about updates to AWS managed policies for ROSA since the service be
 
 | Change | Description | Date | 
 | --- | --- | --- | 
-|  Red Hat OpenShift Service on AWS started tracking changes  |  Red Hat OpenShift Service on AWS started tracking changes for its AWS managed policies\.  |  March 2, 2022  | 
+|   Red Hat OpenShift Service on AWS started tracking changes  |   Red Hat OpenShift Service on AWS started tracking changes for its AWS managed policies\.  |  March 2, 2022  | 
